@@ -3,6 +3,18 @@
 
 #include "HaD_Badge.h"
 #include "bh-badge-animate.h"
+#include "font.h"
+
+typedef enum 
+{
+  PAUSE = 0,
+  PLAY
+} mode_state;
+
+mode_state mode = PLAY;
+
+uint16_t delay_time = 500;
+uint32_t time_old;
 
 uint8_t countNeighbours(int8_t x, int8_t y)
 {
@@ -23,61 +35,61 @@ uint8_t countNeighbours(int8_t x, int8_t y)
   return counter;
 }
 
-void restart()
+void restart(uint8_t array[])
 {  
 
   for(uint8_t y = 0; y < TOTPIXELY; y++)
   {
     Buffer[y] = 0x00;
-    // playground[y] = 0x00;
+    // array[y] = 0x00;
   }
 
   // do some random stuff
   uint8_t random = getTime() & 0xFF;
   uint32_t random2 = (random * random) ^ random << 4;
 
-  playground[8] = random2 & 0xff;
-  playground[9] = random & 0xff;
+  array[8] = random2 & 0xff;
+  array[9] = random & 0xff;
 
 
-  playground[ 0] = (random + random2) ^ 0xfa;
-  playground[ 1] = random - 73;
-  playground[ 2] = random2 % 128;
-  playground[ 3] = ((random2 >> 4) ^ (random)) & 0xff - random;
-  playground[ 4] = random2 % 200;
-  playground[ 5] = ((random2 >> 12) ^ random2) & 0xff;
-  playground[ 6] = (random2 >> 8) & 0xff;
-  playground[ 7] = random2 & 0xff;
-  playground[ 8] = random & 0xff;
-  playground[ 9] = (random ^ random2) & 0xff;
-  playground[10] = playground[7] ^ playground[8];
-  playground[11] = (~playground[4] + playground[8]) & 0xff;
-  playground[12] = (random % 127 * random2  % 128) & 0xff;
-  playground[13] = ~random2 % 255;
-  playground[14] = ~(random2 >> 7) & 0xff;
-  playground[15] = (playground[3] ^ playground[0]) & 0xff;
+  array[ 0] = (random + random2) ^ 0xfa;
+  array[ 1] = random - 73;
+  array[ 2] = random2 % 128;
+  array[ 3] = ((random2 >> 4) ^ (random)) & 0xff - random;
+  array[ 4] = random2 % 200;
+  array[ 5] = ((random2 >> 12) ^ random2) & 0xff;
+  array[ 6] = (random2 >> 8) & 0xff;
+  array[ 7] = random2 & 0xff;
+  array[ 8] = random & 0xff;
+  array[ 9] = (random ^ random2) & 0xff;
+  array[10] = array[7] ^ array[8];
+  array[11] = (~array[4] + array[8]) & 0xff;
+  array[12] = (random % 127 * random2  % 128) & 0xff;
+  array[13] = ~random2 % 255;
+  array[14] = ~(random2 >> 7) & 0xff;
+  array[15] = (array[3] ^ array[0]) & 0xff;
 
 
-  // playground[ 0] = 0b00000000;
-  // playground[ 1] = 0b00000000;
-  // playground[ 2] = 0b00000000;
-  // playground[ 3] = 0b00000000;
-  // playground[ 4] = 0b00000000;
-  // playground[ 5] = 0b00000000;
-  // playground[ 6] = 0b00000000;
-  // playground[ 7] = 0b00111000;
-  // playground[ 8] = 0b00101000;
-  // playground[ 9] = 0b00111000;
-  // playground[10] = 0b00000000;
-  // playground[11] = 0b00000000;
-  // playground[12] = 0b00000000;
-  // playground[13] = 0b00000000;
-  // playground[14] = 0b00000000;
-  // playground[15] = 0b10000000;
+  // array[ 0] = 0b00000000;
+  // array[ 1] = 0b00111000;
+  // array[ 2] = 0b00000000;
+  // array[ 3] = 0b00000000;
+  // array[ 4] = 0b00000000;
+  // array[ 5] = 0b00000000;
+  // array[ 6] = 0b00000000;
+  // array[ 7] = 0b00111000;
+  // array[ 8] = 0b00101000;
+  // array[ 9] = 0b00111000;
+  // array[10] = 0b00000000;
+  // array[11] = 0b00000000;
+  // array[12] = 0b00000000;
+  // array[13] = 0b00111000;
+  // array[14] = 0b00000000;
+  // array[15] = 0b00000000;
 
 }
 
-void liveOrDie()
+void liveOrDie(uint8_t array[])
 {
   for(uint8_t x = 0; x < TOTPIXELX; x++)
   {
@@ -88,22 +100,22 @@ void liveOrDie()
       {
         if ((neighbours < 2) || (neighbours > 3))
         {
-          writePixel(x, y, 0, playground);
+          writePixel(x, y, 0, array);
         }
       }
       else if(neighbours == 3)
       {
-        writePixel(x, y, 1, playground);
+        writePixel(x, y, 1, array);
       }
     }
   }
 }  
 
-void refreshMatrix()
+void refreshMatrix(uint8_t array[])
 {
   for(uint8_t y = 0; y < TOTPIXELY; y++)
   {
-    Buffer[y] = playground[y];
+    Buffer[y] = array[y];
   }
   displayLatch();
 }
@@ -124,44 +136,120 @@ void writePixel(uint8_t x, uint8_t y, uint8_t live, uint8_t array[])
     array[y] &= ~(1 << x);
 }
 
-void animateBadge(void)
+void printChar(int8_t x, int8_t y, char character)
 {
-  pause = 0;
-  delay_time = 500;
- 
-  restart();
+
+  uint16_t i_array = charToArray(character);
+
+  for(int i = 0; i < 7; i++)
+  {
+    if(((y + i) < TOTPIXELY) && ((y+1) >= 0))
+    {
+      if(x <= 3)
+        Buffer[y + i] |= font[i_array + i] << (3 - x);
+      else
+        Buffer[y + i] |= font[i_array + i] >> (x - 3);
+    }
+  }
+
+  displayLatch();
+
+}
+
+
+void animateBadge(void)
+{ 
+  uint8_t playground[TOTPIXELY];
+  uint8_t pause_state = 0;
+
+  restart(playground);
 
   while(1)
   {
-    // show next generation
-    refreshMatrix();     
-    // calculate next generation
-    liveOrDie();
+    uint8_t key_pressed = getControl();
 
-    while( ((getTime() - time_old) < delay_time) || pause)
+    switch(mode)
     {
-      switch (getControl())
-      {
-        case (ESCAPE):
-          displayClose();
-          return;
-        case (LEFT):
-          if(delay_time > 50)
-            delay_time -= 50;
-          break;
-        case (RIGHT):
-          delay_time += 50;
-          break;
-        case (UP):
-          restart();
-          refreshMatrix();
-          break;
-        case (DOWN):
-          pause = !pause;
-          break;
-      }
+      case PAUSE:
+        
+        switch (key_pressed)
+        {
+          case ESCAPE:
+            displayClose();
+            return;
+          case LEFT:
+            break;
+          case RIGHT:
+            break;
+          case UP:
+            restart(playground);
+            break;
+          case DOWN:
+            mode = PLAY;
+            break;
+        }
+
+        if((getTime() - time_old) >= 400)
+        { 
+          if(pause_state)
+          {
+            // show next generation
+            refreshMatrix(playground);
+
+            pause_state = 0;
+          }
+          else
+          {
+            displayClear();
+            printChar(2, 4, 'P');
+
+            pause_state = 1;
+          }
+          
+          time_old = getTime();
+        }
+        break;
+
+      case PLAY:
+        switch (key_pressed)
+        {
+          case ESCAPE:
+            displayClose();
+            return;
+          case LEFT:
+            if(delay_time > 50)
+            {
+              delay_time -= 50;
+              displayClear();
+              printChar(2, 4, '-');
+              time_old = getTime();
+            }
+            break;
+          case RIGHT:
+            delay_time += 50;
+            displayClear();
+            printChar(2, 4, '+');
+            time_old = getTime();
+            break;
+          case UP:
+            restart(playground);
+            break;
+          case DOWN:
+            mode = PAUSE;
+            break;
+        }
+
+        if((getTime() - time_old) >= delay_time)
+        { 
+          // show next generation
+          refreshMatrix(playground);     
+          // calculate next generation
+          liveOrDie(playground);
+          
+          time_old = getTime();
+        }
+        break;
     }
-    time_old = getTime();
   }
 
 }
