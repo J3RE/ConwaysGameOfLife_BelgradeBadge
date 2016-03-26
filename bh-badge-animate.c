@@ -5,7 +5,6 @@
 #include "bh-badge-animate.h"
 #include "font.h"
 
-
 typedef enum 
 {
   PAUSE = 0,
@@ -222,7 +221,7 @@ void animateBadge(void)
   }
   displayClear();
   displayLatch();
-  
+
   i_char1 = 0;
 
   while(1)
