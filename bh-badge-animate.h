@@ -8,6 +8,7 @@ void liveOrDie();
 void restart();
 void refreshMatrix();
 void printChar(int8_t x, int8_t y, char character);
+void scrollDisplay(uint8_t y_start, uint8_t y_end, int8_t steps);
 
 //This function prototype needs to be here:
 void animateBadge(void);
