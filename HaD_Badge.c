@@ -86,8 +86,8 @@ void displayClear(void) {
 }
 
 void displayPixel(uint8_t x, uint8_t y, uint8_t state) {
-    if (state) { Buffer[y] |= 1<<7-x; }
-    else { Buffer[y] &= ~(1<<7-x); }
+    if (state) { Buffer[y] |= 1<<(7-x); }
+    else { Buffer[y] &= ~(1<<(7-x)); }
 }
 
 void showSDLpixel(uint8_t x, uint8_t y, uint8_t state){
@@ -110,7 +110,7 @@ void displayLatch(void) {
     //But is needed here for SDL to show our buffer
     for (uint8_t row=0; row<16; row++) {
         for (uint8_t col=0; col<8; col++) {
-            if (Buffer[row] & 1<<7-col) { showSDLpixel(col, row, ON); }
+            if (Buffer[row] & 1<<(7-col)) { showSDLpixel(col, row, ON); }
                 else { showSDLpixel(col, row, OFF); }
         }
     }
