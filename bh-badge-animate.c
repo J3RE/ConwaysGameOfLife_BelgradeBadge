@@ -15,10 +15,6 @@ typedef enum
   PAUSE_EDITOR
 } mode_state;
 
-char intro[]="Hackaday Belgrade! \0";
-char char_play[]="play \0";
-char char_editor[]="editor \0";
-
 uint8_t countNeighbours(int8_t x, int8_t y)
 {
   uint8_t counter = 0;
@@ -44,21 +40,16 @@ void restart(uint8_t array[])
   for(uint8_t y = 0; y < TOTPIXELY; y++)
   {
     Buffer[y] = 0x00;
-    // array[y] = 0x00;
   }
 
-  // do some random stuff
+  // do some "random" stuff
   uint8_t random = getTime() & 0xFF;
   uint32_t random2 = (random * random) ^ random << 4;
-
-  array[8] = random2 & 0xff;
-  array[9] = random & 0xff;
-
 
   array[ 0] = (random + random2) ^ 0xfa;
   array[ 1] = random - 73;
   array[ 2] = random2 % 128;
-  array[ 3] = ((random2 >> 4) ^ (random)) & 0xff - random;
+  array[ 3] = (((random2 >> 4) ^ (random)) - random2) & 0xff;
   array[ 4] = random2 % 200;
   array[ 5] = ((random2 >> 12) ^ random2) & 0xff;
   array[ 6] = (random2 >> 8) & 0xff;
@@ -177,19 +168,72 @@ void scrollDisplay(uint8_t y_start, uint8_t y_end, int8_t steps)
   }
 }
 
+void changeDelaytime(uint16_t *delay_time, uint16_t *timeout, int8_t increase)
+{
+  *timeout = 700;
+
+  if(increase)
+  {
+    if(*delay_time < 1650)
+    {
+      *delay_time += 50;
+      displayClear();
+      printChar(2, 4, '+');
+      for(uint16_t i = 0; i < *delay_time / 100; i++)
+      {
+        displayPixel(0, 15 - i, 1);
+      }
+
+      displayLatch();
+      return;
+    }
+  }
+  else
+  {           
+    if(*delay_time > 50)
+    {
+      *delay_time -= 50;
+      displayClear();
+      printChar(2, 4, '-');
+      for(uint16_t i = 0; i < *delay_time / 100; i++)
+      {
+        displayPixel(0, 15 - i, 1);
+      }
+
+      displayLatch();
+      return;
+    }
+  }
+  
+  displayClear();
+  printChar(2, 4, '=');
+  for(uint16_t i = 0; i < *delay_time / 100; i++)
+  {
+    displayPixel(0, 15 - i, 1);
+  }
+
+  displayLatch();
+}
+
 void animateBadge(void)
-{ 
+{
   mode_state mode = MENU;
+
+  char intro[]="Hackaday Belgrade! \0";
+  char char_play[]="play \0";
+  char char_editor[]="editor \0";
 
   uint8_t playground[TOTPIXELY];
   uint8_t BufferEditor[TOTPIXELY] = {};
   
-  uint8_t pause_state = 0, blink_editor = 0;
+  uint8_t pause_state, blink_editor;
   uint8_t i_char1 = 0, i_char2 = 0;
   int8_t i_x = 0, i_y = 0;
-  uint32_t time_old;
+
+  uint16_t timeout = 0;
   uint16_t delay_time = 500;
   uint16_t delay_time_scrolling = 100;
+  uint32_t time_old;
 
   // add a smiley, Hackaday logo is to complex
   Buffer[ 8] = 0b00111100;
@@ -285,23 +329,10 @@ void animateBadge(void)
             displayClose();
             return;
           case LEFT:
-            if(delay_time > 50)
-            {
-              delay_time -= 50;
-              displayClear();
-              printChar(2, 4, '-');
-
-              displayLatch();
-              time_old = getTime();
-            }
+            changeDelaytime(&delay_time, &timeout, 0);
             break;
           case RIGHT:
-            delay_time += 50;
-            displayClear();
-            printChar(2, 4, '+');
-
-            displayLatch();
-            time_old = getTime();
+            changeDelaytime(&delay_time, &timeout, 1);
             break;
           case UP:
             restart(playground);
@@ -311,8 +342,9 @@ void animateBadge(void)
             break;
         }
 
-        if((getTime() - time_old) >= delay_time)
-        { 
+        if((getTime() - time_old) >= (delay_time + timeout))
+        {
+          timeout = 0; 
           // show next generation
           refreshMatrix(playground);     
           // calculate next generation
@@ -330,10 +362,16 @@ void animateBadge(void)
             displayClose();
             return;
           case LEFT:
-            delay_time_scrolling -= 10;
+            if(delay_time_scrolling > 20)
+            {
+              delay_time_scrolling -= 20;
+            }
             break;
           case RIGHT:
-            delay_time_scrolling += 10;
+            if(delay_time_scrolling < 500)
+            {
+              delay_time_scrolling += 20;
+            }
             break;
           case UP:
             mode = PLAY;
@@ -458,21 +496,10 @@ void animateBadge(void)
             displayClose();
             return;
           case LEFT:
-            if(delay_time > 50)
-            {
-              delay_time -= 50;
-              displayClear();
-              printChar(2, 4, '-');
-              displayLatch();
-              time_old = getTime();
-            }
+            changeDelaytime(&delay_time, &timeout, 0);
             break;
           case RIGHT:
-            delay_time += 50;
-            displayClear();
-            printChar(2, 4, '+');
-            displayLatch();
-            time_old = getTime();
+            changeDelaytime(&delay_time, &timeout, 1);
             break;
           case UP:
             displayClear();
@@ -490,8 +517,9 @@ void animateBadge(void)
             break;
         }
 
-        if((getTime() - time_old) >= delay_time)
-        { 
+        if((getTime() - time_old) >= (delay_time + timeout))
+        {
+          timeout = 0; 
           // show next generation
           refreshMatrix(playground);     
           // calculate next generation
