@@ -7,14 +7,15 @@
 
 typedef enum 
 {
-  PAUSE = 0,
+  MENU = 0,
   PLAY,
-  MENU,
+  PAUSE,
   EDITOR,
   PLAY_EDITOR,
   PAUSE_EDITOR
 } mode_state;
 
+// returns the active pixels around pixel(@x,@y)
 uint8_t countNeighbours(int8_t x, int8_t y)
 {
   uint8_t counter = 0;
@@ -23,6 +24,7 @@ uint8_t countNeighbours(int8_t x, int8_t y)
   {
     for(int8_t j = -1; j <= 1; j++)
     {
+      // you are not a neighbour of yourself
       if((i != 0) || (j != 0))
       {
         if(readPixel(x + i, y + j, Buffer))
@@ -37,6 +39,7 @@ uint8_t countNeighbours(int8_t x, int8_t y)
 void restart(uint8_t array[])
 {  
 
+  // clear the matrix
   for(uint8_t y = 0; y < TOTPIXELY; y++)
   {
     Buffer[y] = 0x00;
@@ -83,15 +86,18 @@ void restart(uint8_t array[])
 
 }
 
+// calculate the next generation
 void liveOrDie(uint8_t array[])
 {
   for(uint8_t x = 0; x < TOTPIXELX; x++)
   {
     for(uint8_t y = 0; y < TOTPIXELY; y++)
     {
+      // get neighbours of a pixel
       uint8_t neighbours = countNeighbours(x, y);
       if(readPixel(x, y, Buffer))
       {
+        // if a pixel is alive and has less than 2 or more than 3 neighbours, kill it
         if ((neighbours < 2) || (neighbours > 3))
         {
           writePixel(x, y, 0, array);
@@ -99,12 +105,15 @@ void liveOrDie(uint8_t array[])
       }
       else if(neighbours == 3)
       {
+        // if an pixel is dead and has 3 neighbours revive it
         writePixel(x, y, 1, array);
       }
     }
   }
 }  
 
+// copy an @array to the @Buffer
+// the @Buffer is displayed by the LED Matrix
 void refreshMatrix(uint8_t array[])
 {
   for(uint8_t y = 0; y < TOTPIXELY; y++)
@@ -113,14 +122,17 @@ void refreshMatrix(uint8_t array[])
   }
 }
 
+// read the state of the pixel(@x,@y) in the @array
 uint8_t readPixel(int8_t x, int8_t y, uint8_t array[])
 {
+  // if x or y is out of bounds return 0
   if(!((x >= 0) && (x < TOTPIXELX) && (y >= 0) && (y < TOTPIXELY)))
     return 0;
 
   return (array[y] >> (7 - x)) & 0x01;
 }
 
+// write @live to the pixel(@x,@y) of the @array
 void writePixel(uint8_t x, uint8_t y, uint8_t live, uint8_t array[])
 {
   if(live)
@@ -129,6 +141,7 @@ void writePixel(uint8_t x, uint8_t y, uint8_t live, uint8_t array[])
     array[y] &= ~(1 << (7 - x));
 }
 
+// print a character to the @Buffer at position @x,@y
 void printChar(int8_t x, int8_t y, char character)
 {
 
@@ -136,8 +149,9 @@ void printChar(int8_t x, int8_t y, char character)
 
   for(int i = 0; i < 7; i++)
   {
-    if(((y + i) < TOTPIXELY) && ((y+1) >= 0))
+    if(((y + i) < TOTPIXELY) && ((y + i) >= 0))
     {
+      // shift the @character to the right position
       if(x <= 3)
         Buffer[y + i] |= font[i_array + i] << (3 - x);
       else
@@ -149,13 +163,15 @@ void printChar(int8_t x, int8_t y, char character)
 
 }
 
-// positive steps scroll left
+// shifts the Buffer rows @y_start - @y_end by #@steps
 void scrollDisplay(uint8_t y_start, uint8_t y_end, int8_t steps)
 {
+  // check for valid input
   if(y_end >= y_start)
   {
     for(int i = y_start; i <= y_end; i++)
     {
+      // positive steps scroll left
       if(steps > 0)
       {
         Buffer[i] <<= steps;
@@ -168,17 +184,23 @@ void scrollDisplay(uint8_t y_start, uint8_t y_end, int8_t steps)
   }
 }
 
+// increase or decrease the @delay_time
+// display the current @delay_time in a bargraph-style at the first column
 void changeDelaytime(uint16_t *delay_time, uint16_t *timeout, int8_t increase)
 {
+  // display the delay_time-screen for 700ms
   *timeout = 700;
 
+  displayClear();
+
+  // in- or decrease the @delay_time by 50ms
   if(increase)
   {
     if(*delay_time < 1650)
     {
       *delay_time += 50;
-      displayClear();
       printChar(2, 4, '+');
+      // map the @delay_time to 16 pixels
       for(uint16_t i = 0; i < *delay_time / 100; i++)
       {
         displayPixel(0, 15 - i, 1);
@@ -193,8 +215,8 @@ void changeDelaytime(uint16_t *delay_time, uint16_t *timeout, int8_t increase)
     if(*delay_time > 50)
     {
       *delay_time -= 50;
-      displayClear();
       printChar(2, 4, '-');
+      // map the @delay_time to 16 pixels
       for(uint16_t i = 0; i < *delay_time / 100; i++)
       {
         displayPixel(0, 15 - i, 1);
@@ -205,7 +227,7 @@ void changeDelaytime(uint16_t *delay_time, uint16_t *timeout, int8_t increase)
     }
   }
   
-  displayClear();
+  // if the @delay_time is at max or min, show the equal-sign and the delay_time-bargraph
   printChar(2, 4, '=');
   for(uint16_t i = 0; i < *delay_time / 100; i++)
   {
@@ -217,6 +239,7 @@ void changeDelaytime(uint16_t *delay_time, uint16_t *timeout, int8_t increase)
 
 void animateBadge(void)
 {
+  // start in the menu
   mode_state mode = MENU;
 
   char intro[]="Hackaday Belgrade! \0";
@@ -245,11 +268,14 @@ void animateBadge(void)
   Buffer[14] = 0b01000010;
   Buffer[15] = 0b00111100;
 
+  // start with an intro screen
   while(getControl() == NOINPUT)
   {
+    // display a scrolling text
     if((getTime() - time_old) >= delay_time_scrolling)
     {
       i_x++;
+      // shift the first 8 rows to the left by 1
       scrollDisplay(0, 7, 1);
       printChar(7 - i_x, 0, intro[i_char1]);
       
@@ -258,6 +284,7 @@ void animateBadge(void)
         i_x = 0;
         if(intro[++i_char1] == '\0')
         {
+          // start again at the beginning
           i_char1 = 0;
         }
       }
@@ -300,6 +327,7 @@ void animateBadge(void)
             break;
         }
 
+        // toggle between the @playground and a 'P'-character (for pause)
         if((getTime() - time_old) >= 400)
         { 
           if(pause_state)
@@ -386,6 +414,7 @@ void animateBadge(void)
             break;
         }
 
+        // scroll two strings at the same time
         if((getTime() - time_old) >= delay_time_scrolling)
         {
           i_x++;
@@ -459,6 +488,7 @@ void animateBadge(void)
             break;
         }
 
+        // change the duty cycle of the selected pixel according to it's state
         if((getTime() - time_old) >= 100)
         { 
           refreshMatrix(BufferEditor);
@@ -562,6 +592,7 @@ void animateBadge(void)
             break;
         }
 
+        // toggle between the @playground and a 'P'-character (for pause)
         if((getTime() - time_old) >= 400)
         { 
           if(pause_state)

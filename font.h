@@ -1,9 +1,11 @@
+// return where to find the @symbol in the font-vector
 uint16_t charToArray(char symbol)
 {
   if((symbol >= ' ') && (symbol <= '}'))
   {
     return (symbol - 32) * 7;
   }
+  // if the @symbol isn't in the font-vector return an error-symbol
   return 658;
 }
 
