@@ -8,7 +8,7 @@ UP - play
 
 DOWN - editor
 
-LEFT / RIGHT - scroll the text faster/slower
+LEFT / RIGHT - scroll text faster/slower
 
 ### Play
 UP - restart/return to editor
@@ -27,7 +27,7 @@ start the animation by moving to pixel(0,0) (top left corner) and pressing UP
 ### Pause
 UP - restart/return to editor
 
-PAUSE - continue
+DOWN - continue
 
 LEFT - go to menu
 
