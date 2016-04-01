@@ -12,4 +12,4 @@ run:
 clean:
 	-rm HaD_Badge;
 	-rm *.o;
-	-rm *~
+	-rm *~;
