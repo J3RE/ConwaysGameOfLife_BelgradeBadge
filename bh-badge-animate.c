@@ -274,10 +274,10 @@ void animateBadge(void)
     // display a scrolling text
     if((getTime() - time_old) >= delay_time_scrolling)
     {
-      i_x++;
       // shift the first 8 rows to the left by 1
       scrollDisplay(0, 7, 1);
       printChar(7 - i_x, 0, intro[i_char1]);
+      i_x++;
       
       if(i_x > 5)
       {
@@ -417,10 +417,10 @@ void animateBadge(void)
         // scroll two strings at the same time
         if((getTime() - time_old) >= delay_time_scrolling)
         {
-          i_x++;
           scrollDisplay(0, 15, 1);
           printChar(7 - i_x, 0, char_play[i_char1]);
           printChar(7 - i_x, 9, char_editor[i_char2]);
+          i_x++;
           
           if(i_x > 5)
           {
