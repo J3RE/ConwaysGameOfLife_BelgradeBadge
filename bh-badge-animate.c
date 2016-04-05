@@ -36,15 +36,18 @@ uint8_t countNeighbours(int8_t x, int8_t y)
   return counter;
 }
 
-void restart(uint8_t array[])
+void restart(uint8_t array[], uint16_t *delay_time, int16_t *timeout, uint8_t show)
 {  
-
-  // clear the matrix
-  for(uint8_t y = 0; y < TOTPIXELY; y++)
+  if(show)
   {
-    Buffer[y] = 0x00;
+    displayClear();
+    printChar(2, 4, 'R');
+    displayLatch();
+    
+    // show 'R' for 1000ms
+    *timeout = 1000 - *delay_time;
   }
-
+  
   // do some "random" stuff
   uint8_t random = getTime() & 0xFF;
   uint32_t random2 = (random * random) ^ random << 4;
@@ -186,10 +189,10 @@ void scrollDisplay(uint8_t y_start, uint8_t y_end, int8_t steps)
 
 // increase or decrease the @delay_time
 // display the current @delay_time in a bargraph-style at the first column
-void changeDelaytime(uint16_t *delay_time, uint16_t *timeout, int8_t increase)
+void changeDelaytime(uint16_t *delay_time, int16_t *timeout, int8_t increase)
 {
-  // display the delay_time-screen for 700ms
-  *timeout = 700;
+  // display the delay_time-screen for 1000ms
+  *timeout = 1000 - *delay_time;
 
   displayClear();
 
@@ -242,9 +245,9 @@ void animateBadge(void)
   // start in the menu
   mode_state mode = MENU;
 
-  char intro[]="Hackaday Belgrade! \0";
-  char char_play[]="play \0";
-  char char_editor[]="editor \0";
+  const char intro[]="Hackaday Belgrade! \0";
+  const char char_play[]="play \0";
+  const char char_editor[]="editor \0";
 
   uint8_t playground[TOTPIXELY];
   uint8_t BufferEditor[TOTPIXELY] = {};
@@ -253,7 +256,7 @@ void animateBadge(void)
   uint8_t i_char1 = 0, i_char2 = 0;
   int8_t i_x = 0, i_y = 0;
 
-  uint16_t timeout = 0;
+  int16_t timeout = 0;
   uint16_t delay_time = 500;
   uint16_t delay_time_scrolling = 100;
   uint32_t time_old;
@@ -320,7 +323,9 @@ void animateBadge(void)
           case RIGHT:
             break;
           case UP:
-            restart(playground);
+            mode = PLAY;
+            time_old = getTime();
+            restart(playground, &delay_time, &timeout, 1);
             break;
           case DOWN:
             mode = PLAY;
@@ -332,7 +337,7 @@ void animateBadge(void)
         { 
           if(pause_state)
           {
-            // show next generation
+            // show playground
             refreshMatrix(playground);
 
             pause_state = 0;
@@ -357,13 +362,16 @@ void animateBadge(void)
             displayClose();
             return;
           case LEFT:
+            time_old = getTime();
             changeDelaytime(&delay_time, &timeout, 0);
             break;
           case RIGHT:
+            time_old = getTime();
             changeDelaytime(&delay_time, &timeout, 1);
             break;
           case UP:
-            restart(playground);
+            time_old = getTime();
+            restart(playground, &delay_time, &timeout, 1);
             break;
           case DOWN:
             mode = PAUSE;
@@ -403,7 +411,8 @@ void animateBadge(void)
             break;
           case UP:
             mode = PLAY;
-            restart(playground);
+            time_old = getTime();
+            restart(playground, &delay_time, &timeout, 0);
             break;
           case DOWN:
             mode = EDITOR;
@@ -526,9 +535,11 @@ void animateBadge(void)
             displayClose();
             return;
           case LEFT:
+            time_old = getTime();
             changeDelaytime(&delay_time, &timeout, 0);
             break;
           case RIGHT:
+            time_old = getTime();
             changeDelaytime(&delay_time, &timeout, 1);
             break;
           case UP:
@@ -597,7 +608,7 @@ void animateBadge(void)
         { 
           if(pause_state)
           {
-            // show next generation
+            // show playground
             refreshMatrix(playground);
 
             pause_state = 0;
