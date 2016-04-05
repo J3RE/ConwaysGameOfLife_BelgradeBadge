@@ -9,7 +9,7 @@ uint16_t charToArray(char symbol)
   return 658;
 }
 
-uint8_t font[] = 
+const uint8_t font[] = 
 {
   //  
   0x00,0x00,0x00,0x00,0x00,0x00,0x00,
